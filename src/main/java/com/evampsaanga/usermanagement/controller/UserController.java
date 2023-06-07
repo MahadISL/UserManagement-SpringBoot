@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.UnsupportedEncodingException;
 
+
 @RestController
 @RequestMapping("User")
 public class UserController {
@@ -34,10 +35,12 @@ public class UserController {
         if (otp != 0) {
             emailService.sendEmail(email1,"OTP", "One-time passowrd (OTP): " + String.valueOf(otp));
             otpService.saveOtpMetaData(otp);
-            return new ResponseEntity<>("SUCCESSFULLY GENERATED OTP!", HttpStatus.OK);
+            String responseString = "{\n \tresponse code: 200\n \tresponse description: SUCCESSFULLY GENERATED OTP!\n}";
+            return new ResponseEntity<>(responseString, HttpStatus.OK);
         }
         else {
-            return new ResponseEntity<>("ERROR: COULD NOT GENERATE OTP!", HttpStatus.EXPECTATION_FAILED);
+            String responseString = "{\n \tresponse code: 202\n \tresponse description: ERROR: COULD NOT GENERATE OTP!!\n}";
+            return new ResponseEntity<>(responseString, HttpStatus.EXPECTATION_FAILED);
         }
     }
 
@@ -47,20 +50,22 @@ public class UserController {
         String result = otpService.validateOtp(otpValue1);
 
         if(result == "Entered Otp is valid"){
+            String responseString = "{\n \tresponse code: 200\n \tresponse description: " + result + " !\n}";
             String temp = result + "\n! temp: " + String.valueOf(otpValue1) + "\n Response code: "+ HttpStatus.OK;
-            return new ResponseEntity<>(temp, HttpStatus.OK);
+            return new ResponseEntity<>(responseString, HttpStatus.OK);
         }
         else {
-            return new ResponseEntity<>(result, HttpStatus.BAD_REQUEST);
+            String responseString = "{\n \tresponse code: 400\n \tresponse description: " + result + " \n}";
+            return new ResponseEntity<>(responseString, HttpStatus.BAD_REQUEST);
         }
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<User> signUpUserGenerateOtp(@RequestBody User user){
+    public ResponseEntity<String> signUpUserGenerateOtp(@RequestBody User user){
 
         userService.saveSignUp(user);
-
-        return new ResponseEntity<>(user, HttpStatus.OK);
+        String responseString = "{\n \tresponse code: 200\n \tresponse description: SUCCESSFULLY SAVED USER!\n}";
+        return new ResponseEntity<>(responseString, HttpStatus.OK);
     }
 
 }
