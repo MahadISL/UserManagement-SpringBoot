@@ -1,37 +1,13 @@
 package com.evampsaanga.usermanagement.model;
 
-import org.springframework.stereotype.Component;
+public class SaveRequest {
 
-import javax.persistence.*;
-
-@Component
-@Entity
-@Table(name = "Usertable")
-public class User {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "Id")
-    private int id;
-
-    @Column(name = "Name")
     private String name;
-    @Column(name = "Email")
     private String email;
-
-    @Column(name = "Age")
     private String age;
-
-    @Column(name = "Password")
     private String password;
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
+    private String confirmPassword;
+    private String temp;
 
     public String getName() {
         return name;
@@ -63,5 +39,21 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getConfirmPassword() {
+        return confirmPassword;
+    }
+
+    public void setConfirmPassword(String confirmPassword) {
+        this.confirmPassword = confirmPassword;
+    }
+
+    public String getTemp() {
+        return temp;
+    }
+
+    public void setTemp(String temp) {
+        this.temp = temp;
     }
 }
