@@ -23,17 +23,11 @@ public class OtpService {
     @Autowired
     Otp otp;
 
-    static int generationAttempts = 0;
-    static LocalTime firstAttemptTime;
-    static LocalTime fourthAttemptTime;
-    static final int expireTime = 30;
-    static String email;
-    static int badValidationAttempts = 0;
+    @Autowired
+    EmailService emailService;
 
-    static Map<String, String> sha1Map = new HashMap<>();
 
     public String generateOTP(String email1){
-        Boolean generationPossible;
         Random random = new Random();
         // initializing
         int otp1 = 100000 + random.nextInt(900000);
@@ -43,7 +37,6 @@ public class OtpService {
             int id = otpObject1.getId();
             int attempts = otpObject1.getAttempts();
             String otpVal = otpObject1.getOtpValue();
-            LocalDate ldate = otpObject1.getCreationDate();
             LocalTime ltime = otpObject1.getCreationTime();
             String email2 = otpObject1.getEmail();
             int expT = otpObject1.getExpireMins();
@@ -52,29 +45,15 @@ public class OtpService {
             if (attemptsAllowed) {
                 LocalTime newLocalTime = LocalTime.now();
                 LocalDate newDateTIme = LocalDate.now();
-                updateOtpAttempts(id, attempts, otpVal, newDateTIme, newLocalTime, email2, verify);
+                updateOtpAttempts(id, attempts, otp, newDateTIme, newLocalTime, email2, verify);
+                emailService.sendEmail(email1,"OTP", "One-time passowrd (OTP): " + otp);
                 return "attempt";
             }
             else {
-                //updateOtpAttempts(id,attempts,otpVal,ldate,ltime,email2,verify, attemptsAllowed);
                 return null;
             }
         }
-        generationAttempts += 1;
-        if (generationAttempts == 1) {
-            firstAttemptTime = LocalTime.now();
-            email = email1;
-        }
-        if (generationAttempts > 3) {
-            if (email.equals(email1)) {
-                generationPossible = checkAttempts();
-                if (generationPossible) {
-                    return otp;
-                } else {
-                    return null;
-                }
-            }
-        }
+
         return otp;
     }
 
@@ -91,19 +70,6 @@ public class OtpService {
             }
         }
         else {
-            return true;
-        }
-    }
-
-    public Boolean checkAttempts(){
-
-        fourthAttemptTime = LocalTime.now();
-        LocalTime expiryTime = firstAttemptTime.plusSeconds(expireTime);
-        if(expiryTime.compareTo(fourthAttemptTime)>0){
-            return false;
-        }
-        else{
-            generationAttempts = 0;
             return true;
         }
     }
@@ -144,8 +110,6 @@ public class OtpService {
         LocalDate otpGenerationDate = LocalDate.now();
         LocalTime otpGenerationTime = LocalTime.now(ZoneId.of("Asia/Karachi"));
 
-        //int encryptedOtp =  encryptDecryptOtp(otp);
-        //String encryptedOtp = encryptThisString(otp);
 
         // Save Otp data in DB
         Otp otpObject2 = new Otp();
@@ -164,24 +128,28 @@ public class OtpService {
 
         final String SUCCESS = "Entered Otp is valid";
         final String FAIL = "Entered Otp is NOT valid. Please Retry!";
-
-//        Optional<Otp> otpObject2 = otpRepository.findById(inputOtpVal);
-        Otp otpObject1 = otpRepository.findByotpValue(inputOtpVal);
+        System.out.println(inputOtpVal);
+        Otp otpObject2 = otpRepository.findTopByOrderByIdDesc();
+        Otp otpObject1 = otpRepository.findByOtpValue(inputOtpVal);
+        System.out.println(otpObject2);
         if (otpObject1 != null) {
             int originalId = otpObject1.getId();
             String originalOtpVal = otpObject1.getOtpValue();
+            System.out.println(originalOtpVal);
             LocalDate creationDate = otpObject1.getCreationDate();
             LocalTime creationTime = otpObject1.getCreationTime();
+            String email = otpObject1.getEmail();
 
             // Input OTP valid
             if (inputOtpVal != null) {
-
+                System.out.println("inputOtpVal not Null");
                 // The Otp Object is not null
                 if (otpObject1 != null) {
-
+                    System.out.println("object not null");
                     // If similar OTP found in DB
-                    if (inputOtpVal.equals(originalOtpVal)) {
-
+                    // Alternate method contains()
+                    if (inputOtpVal.trim().equals(originalOtpVal.trim())) {
+                        System.out.println("inputOtp = originalotp");
                         // The creation and expiry date of original OTP
                         LocalDate expiryDate = creationDate.plusDays(1);
 
@@ -189,7 +157,7 @@ public class OtpService {
 
                         // Compare if Otp Date valid
                         if (expiryDate.compareTo(localDate) > 0) {
-
+                            System.out.println("Otp date valid");
                             // The creation and expiry time of original OTP
                             LocalTime expiryTime = creationTime.plusMinutes(otpObject1.getExpireMins());
 
@@ -198,56 +166,56 @@ public class OtpService {
 
                             // Compare if Otp Time valid
                             if (expiryTime.compareTo(localTime) > 0) {
-//                            otpRepository.deleteById(originalOtpVal);
+                                System.out.println("Otp time valid");
                                 updateVerifiedOtp(originalId, originalOtpVal, creationDate, creationTime, email, true);
-                                badValidationAttempts = 0;
+
                                 return SUCCESS;
                             } else {
                                 updateVerifiedOtp(originalId, originalOtpVal, creationDate, creationTime, email, false);
-                                badValidationAttempts += 1;
+
                                 return FAIL;
                             }
                         } else {
                             updateVerifiedOtp(originalId, originalOtpVal, creationDate, creationTime, email, false);
-                            badValidationAttempts += 1;
+
                             return FAIL;
                         }
                     } else {
                         updateVerifiedOtp(originalId, originalOtpVal, creationDate, creationTime, email, false);
-                        badValidationAttempts += 1;
+
                         return FAIL;
                     }
                 } else {
                     updateVerifiedOtp(originalId, originalOtpVal, creationDate, creationTime, email, false);
-                    badValidationAttempts += 1;
+
                     return FAIL;
                 }
 
             } else {
                 updateVerifiedOtp(originalId, originalOtpVal, creationDate, creationTime, email, false);
-                badValidationAttempts += 1;
+
                 return FAIL;
             }
         }
-        badValidationAttempts += 1;
+
         return FAIL;
     }
 
     public int validateOtp(String email, String temp) throws UnsupportedEncodingException {
 
-//        int inputOtpVal = encryptDecryptOtp(inputOtpVal1);
         final String SUCCESS = "Otp verified for " + email;
         final String FAIL = "Otp not verified for " + email;
 
-       // List<Otp> otpList = otpRepository.findByemail(email);
 
-        Otp otpObject1 = otpRepository.findTopByOrderByIdDesc();
+        Otp otpObject2 = otpRepository.findTopByOrderByIdDesc();
+        Otp otpObject1 = otpRepository.findByEmail(email);
+        System.out.println(otpObject1);
         String originalOtp = otpObject1.getOtpValue();
         String encryptedOriginalOtp = encryptThisString(originalOtp);
-        if (encryptedOriginalOtp.equals(temp)) {
-            //temp1 = encryptThisString(temp)
-            //Otp otpObject1 = otpRepository.findByotpValue(temp);
-
+        System.out.println(encryptedOriginalOtp);
+        // Alternate method contains()
+        if (encryptedOriginalOtp.trim().equals(temp.trim())) {
+            System.out.println("sameotp");
             Boolean verify = otpObject1.getVerified();
             if (verify) {
                 return 1;
@@ -259,77 +227,9 @@ public class OtpService {
             return 0;
         }
 
-//        for(Otp otpObject: otpList){
-//            int otpValue1 = otpObject.getOtpValue();
-//            Boolean verify = otpObject.getVerified();
-//            if(verify)
-//            {
-//                return 1;
-//            }
-//            else {
-//                return 0;
-//            }
-////            //String rs = validateOtp(otpValue1);
-////            System.out.println(rs);
-////            if (rs.equals("Entered Otp is valid")){
-////                return otpObject.getOtpValue();
-////            }
-//        }
-
-//        Otp otpObject = otpRepository.findFirstByOrderByCreationTimeDesc(time);
-//        if(otpObject.getVerified()){
-//            return 1;
-//        }
-//        else {
-//            return -1;
-//        }
-
     }
 
-    public Boolean checkBadValidateAttempts(){
 
-        if (badValidationAttempts > 2) {
-            return false;
-        } else {
-            return true;
-        }
-    }
-
-//    public Boolean checkBadValidationExpiryTime(){
-//        if (timeAfterBadValidationAttempts != LocalTime.parse("14:54:44.21")) {
-//            // time expired for waiting after bad validation attempts
-//            if (expiryTime.compareTo(timeAfterBadValidationAttempts) < 0) {
-//                badValidationAttempts = 0;
-//                return true;
-//            }
-//            else
-//            {
-//                return false;
-//            }
-//        }
-//        else {
-//            return false;
-//        }
-//    }
-    public int encryptDecryptOtp(int otp) throws UnsupportedEncodingException {
-
-        int reversedOtp = 0;
-        System.out.println("Original Number: " + otp);
-
-        // run loop until num becomes 0
-        while(otp != 0) {
-
-            // get last digit from num
-            int digit = otp % 10;
-            reversedOtp = reversedOtp * 10 + digit;
-
-            // remove the last digit from num
-            otp /= 10;
-        }
-
-        System.out.println("Reversed Number: " + reversedOtp);
-        return reversedOtp;
-    }
 
     public String encryptThisString(String input)
     {

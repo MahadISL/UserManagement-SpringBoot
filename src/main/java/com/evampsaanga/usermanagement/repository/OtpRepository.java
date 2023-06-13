@@ -10,7 +10,7 @@ import java.util.Optional;
 public interface OtpRepository extends CrudRepository<Otp, Integer> {
     Otp findByemail(String email);
 //    Otp findFirstByOrderByCreationTimeDesc(LocalTime time);
-    Otp findByotpValue(String otp);
+    Otp findByOtpValue(String otp);
     Otp findTopByOrderByIdDesc();
     Otp findByEmail(String email);
 }

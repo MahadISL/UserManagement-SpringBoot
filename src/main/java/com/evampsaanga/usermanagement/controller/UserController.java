@@ -43,14 +43,14 @@ public class UserController {
             otpService.saveOtpMetaData(otp,email1);
             response.setResponseCode(String.valueOf(HttpStatus.OK));
             response.setResponseBody("SUCCESSFULLY GENERATED OTP!");
-            String responseString = "{\n \tresponse code: 200\n \tresponse description: SUCCESSFULLY GENERATED OTP!\n}";
+
             return new ResponseEntity<>(response, HttpStatus.OK);
         }
         else if ( otp!=null && otp.equals("attempt"))
         {
             response.setResponseCode(String.valueOf(HttpStatus.OK));
             response.setResponseBody("SUCCESSFULLY GENERATED OTP (new Attempt)!");
-            String responseString = "{\n \tresponse code: 200\n \tresponse description: SUCCESSFULLY GENERATED OTP!\n}";
+
             return new ResponseEntity<>(response, HttpStatus.OK);
         } else {
             response.setResponseCode(String.valueOf(HttpStatus.EXPECTATION_FAILED));
@@ -62,30 +62,21 @@ public class UserController {
 
     @PostMapping("/verifyotp")
     ResponseEntity<?> verifyOtp(@RequestBody String otpValue) throws UnsupportedEncodingException {
-        Boolean verificationAllowed;
-        //int otpValue1 = otpService.encryptDecryptOtp(otpValue);
+
         String otpValue1 = otpService.encryptThisString(otpValue);
-        verificationAllowed = otpService.checkBadValidateAttempts();
-        if (verificationAllowed) {
-            String result = otpService.validateOtp(otpValue);
-            System.out.println(result);
-            if (result.equals("Entered Otp is valid")) {
-                verifyResponse.setResponseCode(String.valueOf(HttpStatus.OK));
-                verifyResponse.setResponseBody(result);
-                verifyResponse.setTemp(otpValue1);
-                String responseString = "{\n \tresponse code: 200\n \tresponse description: " + result + " !\n}";
-                String temp = result + "\n! temp: " + otpValue1 + "\n Response code: " + HttpStatus.OK;
-                return new ResponseEntity<VerifiedResponse>(verifyResponse, HttpStatus.OK);
-            } else {
-                response.setResponseCode(String.valueOf(HttpStatus.BAD_REQUEST));
-                response.setResponseBody(result);
-                String responseString = "{\n \tresponse code: 400\n \tresponse description: " + result + " \n}";
-                return new ResponseEntity<Response>(response, HttpStatus.BAD_REQUEST);
-            }
-        }
-        else {
+        String result = otpService.validateOtp(otpValue);
+
+        if (result.equals("Entered Otp is valid")) {
+
+            verifyResponse.setResponseCode(String.valueOf(HttpStatus.OK));
+            verifyResponse.setResponseBody(result);
+            verifyResponse.setTemp(otpValue1);
+
+            return new ResponseEntity<VerifiedResponse>(verifyResponse, HttpStatus.OK);
+        } else {
+
             response.setResponseCode(String.valueOf(HttpStatus.BAD_REQUEST));
-            response.setResponseBody("VERIFICATION NOT ALLOWED! MORE THAN THREE BAD ATTEMPTS");
+            response.setResponseBody(result);
             return new ResponseEntity<Response>(response, HttpStatus.BAD_REQUEST);
         }
     }
@@ -94,7 +85,7 @@ public class UserController {
     public ResponseEntity<Response> signUpUserGenerateOtp(@RequestBody SaveRequest saveRequest) throws UnsupportedEncodingException {
 
         int otpValue = otpService.validateOtp(saveRequest.getEmail(), saveRequest.getTemp());
-        System.out.println(otpValue);
+
         if(otpValue >0){
             boolean emailCheck = userService.checkIfEmailExist(saveRequest.getEmail());
             boolean passwordCheck = userService.checkIfPasswordsSimilar(saveRequest.getPassword(),saveRequest.getConfirmPassword());
@@ -103,25 +94,27 @@ public class UserController {
                     userService.saveSignUp(saveRequest);
                     response.setResponseCode(String.valueOf(HttpStatus.OK));
                     response.setResponseBody("SUCCESSFULLY SAVED USER!");
-                    String responseString = "{\n \tresponse code: 200\n \tresponse description: SUCCESSFULLY SAVED USER!\n}";
+
                     return new ResponseEntity<>(response, HttpStatus.OK);
                 } else {
                     response.setResponseCode(String.valueOf(HttpStatus.BAD_REQUEST));
                     response.setResponseBody("ERROR EMAIL ALREADY EXISTS!");
+
                     return new ResponseEntity<>(response, HttpStatus.OK);
                 }
             }
             else {
                 response.setResponseCode(String.valueOf(HttpStatus.BAD_REQUEST));
                 response.setResponseBody("ERROR PASSWORDS DO NOT MATCH!");
+
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
         }
         else {
-            String result = "ERROR EMAIL NOT VERIFIED";
+
             response.setResponseCode(String.valueOf(HttpStatus.BAD_REQUEST));
             response.setResponseBody("ERROR EMAIL NOT VERIFIED!");
-            String responseString = "{\n \tresponse code: 200\n \tresponse description: " + result+" !\n}";
+
             return new ResponseEntity<>(response, HttpStatus.OK);
         }
     }
