@@ -9,6 +9,18 @@ public class SaveRequest {
     private String confirmPassword;
     private String temp;
 
+    public SaveRequest(String name, String email, String age, String password, String confirmPassword, String temp) {
+        this.name = name;
+        this.email = email;
+        this.age = age;
+        this.password = password;
+        this.confirmPassword = confirmPassword;
+        this.temp = temp;
+    }
+
+    public SaveRequest() {
+    }
+
     public String getName() {
         return name;
     }

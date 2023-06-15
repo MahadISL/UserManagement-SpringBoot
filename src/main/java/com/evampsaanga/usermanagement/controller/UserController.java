@@ -1,9 +1,7 @@
 package com.evampsaanga.usermanagement.controller;
 
-import com.evampsaanga.usermanagement.model.Response;
-import com.evampsaanga.usermanagement.model.SaveRequest;
-import com.evampsaanga.usermanagement.model.User;
-import com.evampsaanga.usermanagement.model.VerifiedResponse;
+import com.evampsaanga.usermanagement.model.*;
+import com.evampsaanga.usermanagement.service.AuthenticationService;
 import com.evampsaanga.usermanagement.service.EmailService;
 import com.evampsaanga.usermanagement.service.OtpService;
 import com.evampsaanga.usermanagement.service.UserService;
@@ -12,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.xml.bind.SchemaOutputResolver;
 import java.io.UnsupportedEncodingException;
 
 
@@ -19,6 +18,10 @@ import java.io.UnsupportedEncodingException;
 @RequestMapping("User")
 public class UserController {
 
+    @Autowired
+    SigninResponse signinResponse;
+    @Autowired
+    AuthenticationService authenticationService;
     @Autowired
     Response response;
 
@@ -34,20 +37,40 @@ public class UserController {
     @Autowired
     OtpService otpService;
 
+    @Autowired
+    JwtAuthenticationResponse jwtAuthenticationResponse;
+    @Autowired
+    SaveResponse saveResponse;
+
+    @PostMapping("/signin")
+    ResponseEntity<SigninResponse> signin(@RequestBody SigninRequest request) {
+        System.out.println("Request landed in signin controller");
+        JwtAuthenticationResponse jwtObject = authenticationService.signin(request);
+        System.out.println(jwtObject);
+        signinResponse.setToken(jwtObject.getToken());
+        signinResponse.setResponseCode(String.valueOf(HttpStatus.OK));
+        signinResponse.setResponseBody("USER SIGNED IN");
+        return new ResponseEntity<>(signinResponse, HttpStatus.OK);
+    }
+
+    @GetMapping("/hello")
+    String hello() {
+        System.out.println("Request landed in hello controller");
+        String returnString = "Hello World! -> Working";
+        return returnString;
+    }
 
     @GetMapping("/generateotp")
     ResponseEntity<Response> generateOtp(@RequestParam("email") String email1) throws UnsupportedEncodingException {
         String otp = otpService.generateOTP(email1);
         if (otp != null && !otp.equals("attempt")) {
-            emailService.sendEmail(email1,"OTP", "One-time passowrd (OTP): " + otp);
-            otpService.saveOtpMetaData(otp,email1);
+            emailService.sendEmail(email1, "OTP", "One-time passowrd (OTP): " + otp);
+            otpService.saveOtpMetaData(otp, email1);
             response.setResponseCode(String.valueOf(HttpStatus.OK));
             response.setResponseBody("SUCCESSFULLY GENERATED OTP!");
 
             return new ResponseEntity<>(response, HttpStatus.OK);
-        }
-        else if ( otp!=null && otp.equals("attempt"))
-        {
+        } else if (otp != null && otp.equals("attempt")) {
             response.setResponseCode(String.valueOf(HttpStatus.OK));
             response.setResponseBody("SUCCESSFULLY GENERATED OTP (new Attempt)!");
 
@@ -82,19 +105,18 @@ public class UserController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<Response> signUpUserGenerateOtp(@RequestBody SaveRequest saveRequest) throws UnsupportedEncodingException {
+    public ResponseEntity<?> signUpUserGenerateOtp(@RequestBody SaveRequest saveRequest) throws UnsupportedEncodingException {
 
         int otpValue = otpService.validateOtp(saveRequest.getEmail(), saveRequest.getTemp());
 
-        if(otpValue >0){
+        if (otpValue > 0) {
             boolean emailCheck = userService.checkIfEmailExist(saveRequest.getEmail());
-            boolean passwordCheck = userService.checkIfPasswordsSimilar(saveRequest.getPassword(),saveRequest.getConfirmPassword());
+            boolean passwordCheck = userService.checkIfPasswordsSimilar(saveRequest.getPassword(), saveRequest.getConfirmPassword());
             if (passwordCheck) {
                 if (!emailCheck) {
                     userService.saveSignUp(saveRequest);
                     response.setResponseCode(String.valueOf(HttpStatus.OK));
                     response.setResponseBody("SUCCESSFULLY SAVED USER!");
-
                     return new ResponseEntity<>(response, HttpStatus.OK);
                 } else {
                     response.setResponseCode(String.valueOf(HttpStatus.BAD_REQUEST));
@@ -102,21 +124,20 @@ public class UserController {
 
                     return new ResponseEntity<>(response, HttpStatus.OK);
                 }
-            }
-            else {
+            } else {
                 response.setResponseCode(String.valueOf(HttpStatus.BAD_REQUEST));
                 response.setResponseBody("ERROR PASSWORDS DO NOT MATCH!");
 
                 return new ResponseEntity<>(response, HttpStatus.OK);
             }
-        }
-        else {
+        } else {
 
             response.setResponseCode(String.valueOf(HttpStatus.BAD_REQUEST));
             response.setResponseBody("ERROR EMAIL NOT VERIFIED!");
 
             return new ResponseEntity<>(response, HttpStatus.OK);
         }
+
     }
 
 }
