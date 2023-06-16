@@ -60,6 +60,13 @@ public class UserController {
         return returnString;
     }
 
+    @GetMapping("/dashboard")
+    String dashboard() {
+        System.out.println("Request landed in dashboard controller");
+        String returnString = "Dashboard! -> Working";
+        return returnString;
+    }
+
     @GetMapping("/generateotp")
     ResponseEntity<Response> generateOtp(@RequestParam("email") String email1) throws UnsupportedEncodingException {
         String otp = otpService.generateOTP(email1);

@@ -19,10 +19,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(
-        // securedEnabled = true,
-        // jsr250Enabled = true,
-        prePostEnabled = true)
 public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Autowired
     UserDetailsServiceImpl userDetailsService;
@@ -53,12 +49,19 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
+        // security disabled for particular types of attacks
         http.cors().and().csrf().disable()
+                // throws exception authentication denied
                 .exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and()
+                // sets session as stateless
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
+                // Do not need to authenticate these specific urls
                 .authorizeRequests().antMatchers("/User/generateotp","/User/verifyotp","/User/signin","/User/signup").permitAll()
+                // Any other urls authenticate
                 .anyRequest().authenticated();
 
+
+        // Add authenticationJwtTokenFilter before spring security usernamepassword authentication filter
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
     }
 }
